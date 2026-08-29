@@ -11,7 +11,10 @@ body[data-theme=light]{--bg:#eff1f5;--surface:#fff;--text:#333;--muted:#667;--ac
 body[data-theme=honey]{--bg:#2a2018;--surface:#3a2d1e;--text:#f5e6c8;--muted:#c9b28a;--accent:#f9e2af;--green:#fab387;--panel:#241a10;--line:#5a4630;}
 .beta-badge{background:var(--green);color:var(--bg);font-size:11px;font-weight:bold;padding:3px 8px;border-radius:6px;letter-spacing:1px;vertical-align:middle;}
 #landing{position:fixed;inset:0;background:linear-gradient(135deg,var(--bg),var(--panel),var(--bg));z-index:100;overflow-y:auto;display:block;}
-.page{max-width:860px;margin:0 auto;padding:40px 24px 60px;}
+#leaves{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:1;}
+.page{position:relative;z-index:2;max-width:860px;margin:0 auto;padding:40px 24px 60px;}
+.leaf{position:absolute;top:-50px;animation:fall linear infinite;opacity:.85;}
+@keyframes fall{to{transform:translateY(115vh) rotate(720deg);}}
 .page section{margin-bottom:56px;text-align:center;}
 .page h2{font-size:28px;color:var(--accent);margin-bottom:24px;}
 .bear-mascot{font-size:96px;animation:bounce 2.2s infinite;display:inline-block;}
@@ -78,21 +81,21 @@ input{flex:1;padding:12px 16px;border:none;border-radius:12px;background:var(--p
 </style>
 </head>
 <body data-theme="dark">
-<div id="landing"><div class="page">
+<div id="landing"><div id="leaves"></div><div class="page">
   <section class="hero"><span class="bear-mascot">🐻</span><h1>Medved AI <span class="beta-badge">BETA</span></h1>
   <p class="subtitle">Мудрый медведь из русского леса.<br>Ум уровня больших моделей, память, зрение и голос.</p>
   <button id="startBtn" onclick="startChat()">Начать общение</button><p class="beta-warning">⚠️ Это бета-версия.</p></section>
   <section><h2>✨ Что умеет</h2><div class="grid">
     <div class="card"><div class="icon">🔍</div><h3>Авто-поиск</h3><p>Сам лезет в интернет, когда нужно.</p></div>
     <div class="card"><div class="icon">🖼️</div><h3>Зрение</h3><p>Понимает картинки.</p></div>
+    <div class="card"><div class="icon">📚</div><h3>Домашка</h3><p>Решает пошагово, как учитель.</p></div>
     <div class="card"><div class="icon">💾</div><h3>Несколько чатов</h3><p>Помнит все диалоги.</p></div>
     <div class="card"><div class="icon">🎙️</div><h3>Голос</h3><p>Слышит и говорит.</p></div>
     <div class="card"><div class="icon">🎭</div><h3>Характеры</h3><p>Мудрый, шутник, философ, сказитель.</p></div>
-    <div class="card"><div class="icon">🌗</div><h3>Темы</h3><p>Тёмная, светлая, медовая.</p></div>
   </div></section>
   <section><h2>📜 Путь Медведа</h2><div class="timeline">
     <div class="ver"><b>v1.0</b> — консольный бот</div><div class="ver"><b>v5.0</b> — веб + память</div>
-    <div class="ver"><b>v6.0</b> — голос, темы, облако</div><div class="ver"><b>v7.0</b> — авто-поиск, зрение, чаты</div>
+    <div class="ver"><b>v6.0</b> — голос, темы, облако</div><div class="ver"><b>v7.1</b> — осенние листья + домашка</div>
   </div></section>
   <section class="foot"><p>🐻 Medved AI [BETA]</p><p class="disclaimer-line">Это ИИ, поэтому ответы могут быть неточными.</p></section>
 </div></div>
@@ -112,6 +115,7 @@ input{flex:1;padding:12px 16px;border:none;border-radius:12px;background:var(--p
         <select id="persona" onchange="persona=this.value"><option value="wise">🧘 Мудрый</option><option value="joker">😄 Шутник</option><option value="philosopher"> Философ</option><option value="storyteller">🔥 Сказитель</option></select>
         <button id="modeFast" class="mode-btn active" onclick="setMode(false)">⚡</button>
         <button id="modeThink" class="mode-btn" onclick="setMode(true)">🧠</button>
+        <button id="hwBtn" class="mode-btn" title="Помощь с домашкой" onclick="toggleHW()">📚</button>
         <button class="mode-btn" onclick="cycleTheme()">🌗</button>
       </div>
     </header>
@@ -135,6 +139,7 @@ input{flex:1;padding:12px 16px;border:none;border-radius:12px;background:var(--p
 const chat=document.getElementById('chat'),input=document.getElementById('input'),typing=document.getElementById('typing');
 let thinkMode=false,ttsOn=false,listening=false,recog=null,controller=null;
 let persona='wise',ttsVoice=null,ttsRate=1.35;
+let hwMode=false;
 let userName=localStorage.getItem('medvedUserName')||null,waitingForName=false;
 let chats=JSON.parse(localStorage.getItem('medvedChats')||'{}');
 let currentChat=localStorage.getItem('medvedCurrent')||null;
@@ -148,6 +153,22 @@ document.addEventListener('keydown',e=>{
   if(e.key=='Escape')stopGen();
 });
 
+function spawnLeaves(){
+  var box=document.getElementById('leaves');if(!box)return;
+  var em=['🍂','','🍃'];
+  for(var i=0;i<16;i++){
+    var l=document.createElement('span');l.className='leaf';
+    l.textContent=em[i%3];
+    l.style.left=Math.random()*100+'vw';
+    l.style.fontSize=(14+Math.random()*18)+'px';
+    l.style.animationDuration=(6+Math.random()*9)+'s';
+    l.style.animationDelay=(Math.random()*8)+'s';
+    box.appendChild(l);
+  }
+}
+spawnLeaves();
+
+function toggleHW(){hwMode=!hwMode;document.getElementById('hwBtn').classList.toggle('active',hwMode);}
 function cur(){return chats[currentChat];}
 function saveChats(){localStorage.setItem('medvedChats',JSON.stringify(chats));localStorage.setItem('medvedCurrent',currentChat);}
 
@@ -240,7 +261,7 @@ async function ask(text){
   typing.style.display='block';chat.scrollTop=chat.scrollHeight;
   try{
     const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal:controller.signal,
-      body:JSON.stringify({message:text,history:cur().history.slice(-8),memory:cur().summary||'',userName,think:thinkMode,image:pendingImage,persona})});
+      body:JSON.stringify({message:text,history:cur().history.slice(-8),memory:cur().summary||'',userName,think:thinkMode,image:pendingImage,hw:hwMode,persona})});
     const data=await res.json();typing.style.display='none';
     if(data.error)addMsg(data.error+' 😢','bot');
     else{
