@@ -49,6 +49,9 @@
   .tool-btn.active{background:var(--accent);box-shadow:0 0 0 2px var(--accent);}
   .tool-btn.listening{background:#f38ba8;animation:pulse 1s infinite;}
   @keyframes pulse{50%{opacity:.6;}}
+   .voice-bar{display:none;align-items:center;gap:8px;padding:8px 20px;background:var(--panel);border-top:1px solid var(--line);font-size:13px;color:var(--muted);flex-wrap:wrap;}
+  .voice-bar.show{display:flex;}
+  .voice-bar select{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:5px;font-size:13px;max-width:220px;}
   input{flex:1;padding:12px 16px;border:none;border-radius:12px;background:var(--panel);color:var(--text);font-size:15px;outline:none;}
   .send-btn{padding:12px 24px;border:none;border-radius:12px;background:var(--green);color:var(--bg);font-weight:bold;cursor:pointer;}
   .send-btn:disabled{opacity:.5;}
@@ -58,6 +61,17 @@
 <body data-theme="dark">
 <div id="landing">
   <div class="landing-content">
+     <div class="voice-bar" id="voiceBar">
+    <span>🔊 Голос:</span>
+    <select id="voiceSel" onchange="setVoice(this.value)"></select>
+    <span>Скорость:</span>
+    <select id="rateSel" onchange="setRate(this.value)">
+      <option value="1">1x</option>
+      <option value="1.2">1.2x</option>
+      <option value="1.35" selected>1.35x ⚡</option>
+      <option value="1.6">1.6x ⚡⚡</option>
+    </select>
+  </div>
     <span class="bear-mascot">🐻</span>
     <h1>Medved AI <span class="beta-badge">BETA</span></h1>
     <p class="subtitle">Мудрый медведь из русского леса.<br>Теперь он слышит, говорит и помнит тебя.</p>
@@ -127,13 +141,60 @@ function resetChat(){
 
 function setMode(t){thinkMode=t;document.getElementById('modeFast').classList.toggle('active',!t);document.getElementById('modeThink').classList.toggle('active',t);}
 function toggleSearch(){searchMode=!searchMode;document.getElementById('searchBtn').classList.toggle('active',searchMode);}
-function toggleTTS(){ttsOn=!ttsOn;document.getElementById('ttsBtn').classList.toggle('active',ttsOn);}
+function toggleTTS(){
+  ttsOn=!ttsOn;
+  document.getElementById('ttsBtn').classList.toggle('active',ttsOn);
+  document.getElementById('voiceBar').classList.toggle('show',ttsOn);
+  if(!ttsOn&&'speechSynthesis' in window)speechSynthesis.cancel();
+}
 function cycleTheme(){themeIdx=(themeIdx+1)%themes.length;document.body.dataset.theme=themes[themeIdx];}
 
 function md(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
   .replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\*(.+?)\*/g,'<i>$1</i>').replace(/`(.+?)`/g,'<code>$1</code>');}
 
-function speak(t){if(!ttsOn||!('speechSynthesis' in window))return;const clean=t.replace(/[*#`>]/g,'').slice(0,400);const u=new SpeechSynthesisUtterance(clean);u.lang='ru-RU';speechSynthesis.speak(u);}
+let ttsVoice=null,ttsRate=1.35;
+
+function cleanForSpeech(t){
+  return t
+    .replace(/[*#`>_~]/g,'')                                   // markdown
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}\u{2190}-\u{21FF}]/gu,'') // смайлики
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
+function loadVoices(){
+  if(!('speechSynthesis' in window))return;
+  const vs=speechSynthesis.getVoices();
+  const sel=document.getElementById('voiceSel');
+  if(!sel)return;
+  sel.innerHTML='';
+  const ru=vs.filter(v=>v.lang.toLowerCase().startsWith('ru'));
+  const rest=vs.filter(v=>!v.lang.toLowerCase().startsWith('ru'));
+  [...ru,...rest].forEach(v=>{
+    const o=document.createElement('option');
+    o.value=v.name;
+    o.textContent=(v.lang.toLowerCase().startsWith('ru')?'🇷🇺 ':'')+v.name;
+    sel.appendChild(o);
+  });
+  const saved=localStorage.getItem('medvedVoice');
+  if(saved)sel.value=saved;
+  if(sel.value)ttsVoice=vs.find(v=>v.name===sel.value)||null;
+}
+if('speechSynthesis' in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices;}
+
+function setVoice(n){localStorage.setItem('medvedVoice',n);const vs=speechSynthesis.getVoices();ttsVoice=vs.find(v=>v.name===n)||null;}
+function setRate(r){ttsRate=parseFloat(r);}
+
+function speak(t){
+  if(!ttsOn||!('speechSynthesis' in window))return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(cleanForSpeech(t).slice(0,500));
+  u.lang='ru-RU';
+  u.rate=ttsRate;      // ⚡ быстрее
+  u.pitch=1;
+  if(ttsVoice)u.voice=ttsVoice;
+  speechSynthesis.speak(u);
+}
 
 function toggleMic(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
