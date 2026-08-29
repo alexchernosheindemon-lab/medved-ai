@@ -12,24 +12,48 @@ const PERSONAS = {
 const CAP_TEXT = [
   'Вот что я умею, друг мой:', '',
   '⚡ Быстрые ответы и 🧠 размышление',
-  '🌐 Поиск в интернете',
+  '🌐 Умный поиск: Википедия + интернет',
   '🎙️ Слушать тебя и отвечать вслух',
-  '🎭 Менять характер: мудрый, шутник, философ, сказитель',
+  '🎭 Менять характер',
   '💬 Помнить твоё имя и весь разговор', '',
   '⚠️ Я ещё расту! Это бета-версия. 🐻'
 ].join('\n');
 
 function stripTags(s){return s.replace(/<[^>]+>/g,'');}
-function decodeEntities(s){return s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'");}
+function decodeEntities(s){return s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&nbsp;/g,' ');}
 
+// --- Поиск в DuckDuckGo (живые источники) ---
 async function searchWeb(q){
   try{
     const r=await fetch('https://html.duckduckgo.com/html/?q='+encodeURIComponent(q),{headers:{'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}});
     const html=await r.text();
     const a=html.match(/<a[^>]*class="result__a"[^>]*>[\s\S]*?<\/a>/g)||[];
     const s=html.match(/<(?:a|td)[^>]*class="result__snippet"[^>]*>[\s\S]*?<\/(?:a|td)>/g)||[];
-    const out=[];const max=Math.min(a.length,4);
-    for(let i=0;i<max;i++){const t=a[i];const href=(t.match(/href="([^"]+)"/)||[])[1]||'';const title=decodeEntities(stripTags(t)).trim();const snip=i<s.length?decodeEntities(stripTags(s[i])).trim():'';if(title)out.push({title,url:href,snippet:snip});}
+    const out=[];const max=Math.min(a.length,5);
+    for(let i=0;i<max;i++){
+      const t=a[i];const href=(t.match(/href="([^"]+)"/)||[])[1]||'';
+      const title=decodeEntities(stripTags(t)).trim();
+      const snip=i<s.length?decodeEntities(stripTags(s[i])).trim():'';
+      if(title)out.push({title,url:href,snippet:snip});
+    }
+    return out;
+  }catch(e){return[];}
+}
+
+// --- Поиск в Википедии (точные факты) ---
+async function searchWiki(q){
+  try{
+    const r=await fetch('https://ru.wikipedia.org/w/api.php?action=query&list=search&srsearch='+encodeURIComponent(q)+'&format=json&utf8=1&srslimit=3');
+    const data=await r.json();
+    const items=(data.query&&data.query.search)||[];
+    const out=[];
+    for(const it of items.slice(0,2)){
+      try{
+        const s=await fetch('https://ru.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(it.title));
+        const sd=await s.json();
+        if(sd.extract)out.push({title:it.title,url:'https://ru.wikipedia.org/wiki/'+encodeURIComponent(it.title),snippet:sd.extract});
+      }catch(e){}
+    }
     return out;
   }catch(e){return[];}
 }
@@ -48,7 +72,19 @@ export default async function handler(req,res){
   if(think)sys+=' Сейчас режим размышления: сначала кратко рассуди шаг за шагом, затем дай ответ.';
 
   let content=message;let sources=[];
-  if(search&&message){const f=await searchWeb(message);if(f.length){sources=f;content='Результаты поиска:\n'+f.map((r,i)=>`${i+1}. ${r.title}: ${r.snippet}`).join('\n')+`\n\nОтветь на вопрос по-русски: "${message}"`;}}
+
+  // --- УМНЫЙ ДВОЙНОЙ ПОИСК ---
+  if(search&&message){
+    const [web,wiki]=await Promise.all([searchWeb(message),searchWiki(message)]);
+    const found=wiki.concat(web);
+    if(found.length){
+      sources=found;
+      let ctx='';
+      if(wiki.length)ctx+='ЭНЦИКЛОПЕДИЯ (Википедия):\n'+wiki.map((r,i)=>(i+1)+'. '+r.title+': '+r.snippet).join('\n')+'\n\n';
+      if(web.length)ctx+='ДРУГИЕ ИСТОЧНИКИ:\n'+web.map((r,i)=>(i+1)+'. '+r.title+': '+r.snippet).join('\n')+'\n\n';
+      content=ctx+'Опираясь на эти данные и свои знания, дай точный и понятный ответ на русском языке на вопрос: "'+message+'". Если данных мало — честно скажи об этом.';
+    }
+  }
 
   const messages=[{role:'system',content:sys},...history,{role:'user',content}];
   try{
