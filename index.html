@@ -4,209 +4,186 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Medved AI 🐻</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#1e1e2e">
+<link rel="icon" href="/icon.svg">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Segoe UI', sans-serif; background: #1e1e2e; color: #cdd6f4; }
-  .beta-badge { background: #fab387; color: #1e1e2e; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 6px; letter-spacing: 1px; vertical-align: middle; }
-  #landing { position: fixed; inset: 0; background: linear-gradient(135deg, #1e1e2e, #2a2438, #1e1e2e); display: flex; align-items: center; justify-content: center; z-index: 100; overflow: auto; }
-  .landing-content { text-align: center; padding: 40px 24px; max-width: 640px; animation: fadeIn 0.8s; }
-  .bear-mascot { font-size: 96px; animation: bounce 2.2s ease-in-out infinite; display: inline-block; }
-  @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
-  .landing-content h1 { font-size: 50px; margin: 14px 0 6px; color: #f9e2af; }
-  .subtitle { color: #a6adc8; font-size: 18px; margin-bottom: 32px; line-height: 1.5; }
-  .features { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 34px; }
-  .feature { background: #313244; padding: 11px 20px; border-radius: 14px; font-size: 14px; border: 1px solid #45475a; }
-  #startBtn { padding: 17px 52px; font-size: 21px; font-weight: bold; border: none; border-radius: 16px; background: linear-gradient(135deg, #a6e3a1, #94e2d5); color: #1e1e2e; cursor: pointer; transition: 0.2s; }
-  #startBtn:hover { transform: translateY(-3px); }
-  .beta-warning { color: #fab387; font-size: 13px; margin-top: 22px; }
-  #chatScreen { display: none; flex-direction: column; height: 100vh; }
-  header { background: #313244; padding: 14px 24px; font-size: 20px; font-weight: bold; border-bottom: 1px solid #45475a; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-  .mode-switch { display: flex; gap: 4px; background: #1e1e2e; padding: 4px; border-radius: 10px; align-items: center; }
-  .mode-btn { padding: 7px 16px; border: none; border-radius: 8px; background: transparent; color: #a6adc8; font-size: 13px; cursor: pointer; font-weight: 500; }
-  .mode-btn.active { background: #89b4fa; color: #1e1e2e; font-weight: bold; }
-  .reset-btn { background: transparent; border: none; color: #6c7086; cursor: pointer; font-size: 18px; padding: 6px; border-radius: 8px; }
-  .reset-btn:hover { color: #f38ba8; }
-  #chat { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; }
-  .msg { max-width: 75%; padding: 12px 16px; border-radius: 16px; line-height: 1.5; word-wrap: break-word; animation: fadeIn 0.3s; white-space: pre-wrap; }
-  .user { align-self: flex-end; background: #89b4fa; color: #1e1e2e; border-bottom-right-radius: 4px; }
-  .bot { align-self: flex-start; background: #313244; border-bottom-left-radius: 4px; }
-  .thinking-box { align-self: flex-start; background: #181825; border: 1px solid #45475a; border-radius: 12px; padding: 8px 14px; max-width: 85%; font-size: 13px; }
-  .thinking-box summary { cursor: pointer; color: #7f849c; }
-  .thinking-content { margin-top: 8px; color: #9399b2; white-space: pre-wrap; font-style: italic; }
-  .sources-box { align-self: flex-start; background: #181825; border: 1px solid #45475a; border-radius: 12px; padding: 8px 14px; max-width: 85%; font-size: 13px; }
-  .sources-box .label { color: #7f849c; margin-bottom: 4px; }
-  .sources-box a { color: #89b4fa; text-decoration: none; display: block; margin: 4px 0; }
-  .typing { align-self: flex-start; background: #313244; padding: 12px 16px; border-radius: 16px; border-bottom-left-radius: 4px; color: #a6adc8; font-style: italic; display: none; }
-  .input-area { display: flex; gap: 8px; padding: 16px 24px; background: #313244; border-top: 1px solid #45475a; }
-  .tool-btn { width: 46px; height: 46px; border: none; border-radius: 12px; background: #45475a; font-size: 20px; cursor: pointer; flex-shrink: 0; }
-  .tool-btn:hover { background: #585b70; }
-  .tool-btn.active { background: #89b4fa; box-shadow: 0 0 0 2px #89b4fa; }
-  input { flex: 1; padding: 12px 16px; border: none; border-radius: 12px; background: #45475a; color: #cdd6f4; font-size: 15px; outline: none; }
-  button.send-btn { padding: 12px 24px; border: none; border-radius: 12px; background: #a6e3a1; color: #1e1e2e; font-size: 15px; font-weight: bold; cursor: pointer; }
-  button.send-btn:disabled { opacity: 0.5; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{--bg:#1e1e2e;--surface:#313244;--text:#cdd6f4;--muted:#a6adc8;--accent:#89b4fa;--green:#a6e3a1;--panel:#181825;--line:#45475a;
+       font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);}
+  body[data-theme=light]{--bg:#eff1f5;--surface:#fff;--text:#333;--muted:#667;--accent:#1e66f5;--green:#40a02b;--panel:#e6e9ef;--line:#ccd0da;}
+  body[data-theme=honey]{--bg:#2a2018;--surface:#3a2d1e;--text:#f5e6c8;--muted:#c9b28a;--accent:#f9e2af;--green:#fab387;--panel:#241a10;--line:#5a4630;}
+  .beta-badge{background:var(--green);color:var(--bg);font-size:11px;font-weight:bold;padding:3px 8px;border-radius:6px;letter-spacing:1px;vertical-align:middle;}
+  #landing{position:fixed;inset:0;background:linear-gradient(135deg,var(--bg),var(--panel),var(--bg));display:flex;align-items:center;justify-content:center;z-index:100;overflow:auto;}
+  .landing-content{text-align:center;padding:40px 24px;max-width:640px;animation:fadeIn .8s;}
+  .bear-mascot{font-size:96px;animation:bounce 2.2s ease-in-out infinite;display:inline-block;}
+  @keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-14px);}}
+  .landing-content h1{font-size:50px;margin:14px 0 6px;color:var(--accent);}
+  .subtitle{color:var(--muted);font-size:18px;margin-bottom:30px;line-height:1.5;}
+  .features{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:32px;}
+  .feature{background:var(--surface);padding:10px 18px;border-radius:14px;font-size:14px;border:1px solid var(--line);}
+  #startBtn{padding:17px 52px;font-size:21px;font-weight:bold;border:none;border-radius:16px;background:var(--green);color:var(--bg);cursor:pointer;transition:.2s;}
+  #startBtn:hover{transform:translateY(-3px);}
+  .beta-warning{color:var(--green);font-size:13px;margin-top:20px;}
+  #chatScreen{display:none;flex-direction:column;height:100vh;}
+  header{background:var(--surface);padding:12px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+  .hgroup{display:flex;gap:6px;align-items:center;background:var(--bg);padding:4px;border-radius:10px;flex-wrap:wrap;}
+  .mode-btn{padding:7px 12px;border:none;border-radius:8px;background:transparent;color:var(--muted);font-size:13px;cursor:pointer;font-weight:500;}
+  .mode-btn.active{background:var(--accent);color:var(--bg);font-weight:bold;}
+  select{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px;font-size:13px;}
+  .reset-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:6px;border-radius:8px;}
+  .reset-btn:hover{color:var(--green);}
+  #chat{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px;}
+  .msg{max-width:78%;padding:12px 16px;border-radius:16px;line-height:1.5;word-wrap:break-word;animation:fadeIn .3s;white-space:pre-wrap;}
+  .msg code{background:var(--panel);padding:1px 5px;border-radius:5px;font-family:monospace;}
+  .user{align-self:flex-end;background:var(--accent);color:var(--bg);border-bottom-right-radius:4px;}
+  .bot{align-self:flex-start;background:var(--surface);border-bottom-left-radius:4px;}
+  .thinking-box,.sources-box{align-self:flex-start;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 14px;max-width:85%;font-size:13px;}
+  .thinking-box summary{cursor:pointer;color:var(--muted);}
+  .thinking-content{margin-top:8px;color:var(--muted);white-space:pre-wrap;font-style:italic;}
+  .sources-box a{color:var(--accent);text-decoration:none;display:block;margin:4px 0;}
+  .typing{align-self:flex-start;background:var(--surface);padding:12px 16px;border-radius:16px;border-bottom-left-radius:4px;color:var(--muted);font-style:italic;display:none;}
+  .input-area{display:flex;gap:8px;padding:14px 20px;background:var(--surface);border-top:1px solid var(--line);}
+  .tool-btn{width:46px;height:46px;border:none;border-radius:12px;background:var(--panel);font-size:20px;cursor:pointer;flex-shrink:0;}
+  .tool-btn:hover{filter:brightness(1.2);}
+  .tool-btn.active{background:var(--accent);box-shadow:0 0 0 2px var(--accent);}
+  .tool-btn.listening{background:#f38ba8;animation:pulse 1s infinite;}
+  @keyframes pulse{50%{opacity:.6;}}
+  input{flex:1;padding:12px 16px;border:none;border-radius:12px;background:var(--panel);color:var(--text);font-size:15px;outline:none;}
+  .send-btn{padding:12px 24px;border:none;border-radius:12px;background:var(--green);color:var(--bg);font-weight:bold;cursor:pointer;}
+  .send-btn:disabled{opacity:.5;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 </style>
 </head>
-<body>
+<body data-theme="dark">
 <div id="landing">
   <div class="landing-content">
     <span class="bear-mascot">🐻</span>
     <h1>Medved AI <span class="beta-badge">BETA</span></h1>
-    <p class="subtitle">Мудрый медведь из русского леса.<br>Всегда рядом, всегда поможет, всегда выслушает.</p>
+    <p class="subtitle">Мудрый медведь из русского леса.<br>Теперь он слышит, говорит и помнит тебя.</p>
     <div class="features">
-      <div class="feature">⚡ Быстрые ответы</div>
-      <div class="feature">🧠 Размышление</div>
-      <div class="feature">🌐 Поиск в интернете</div>
-      <div class="feature">💬 Память</div>
+      <div class="feature">🎙️ Голос</div><div class="feature">🎭 Характеры</div>
+      <div class="feature">🌐 Поиск</div><div class="feature">💬 Память</div><div class="feature">🌗 Темы</div>
     </div>
     <button id="startBtn" onclick="startChat()">Начать общение</button>
-    <p class="beta-warning">⚠️ Это бета-версия. Новые функции будут добавляться в будущем.</p>
+    <p class="beta-warning">⚠️ Это бета-версия. Новые функции впереди.</p>
   </div>
 </div>
 
 <div id="chatScreen">
   <header>
     <span>🐻 Medved AI <span class="beta-badge">BETA</span></span>
-    <div class="mode-switch">
-      <button id="modeFast" class="mode-btn active" onclick="setMode(false)">⚡ Быстро</button>
-      <button id="modeThink" class="mode-btn" onclick="setMode(true)">🧠 Размышление</button>
-      <button class="reset-btn" title="Начать заново" onclick="resetChat()">↺</button>
+    <div class="hgroup">
+      <select id="persona" onchange="persona=this.value">
+        <option value="wise">🧘 Мудрый</option><option value="joker">😄 Шутник</option>
+        <option value="philosopher"> Философ</option><option value="storyteller">🔥 Сказитель</option>
+      </select>
+      <button id="modeFast" class="mode-btn active" onclick="setMode(false)">⚡</button>
+      <button id="modeThink" class="mode-btn" onclick="setMode(true)">🧠</button>
+      <button class="mode-btn" onclick="cycleTheme()">🌗</button>
+      <button class="reset-btn" title="Заново" onclick="resetChat()">↺</button>
     </div>
   </header>
-  <div id="chat">
-    <div class="typing" id="typing">Медвед думает...</div>
-  </div>
+  <div id="chat"><div class="typing" id="typing">Медвед думает...</div></div>
   <div class="input-area">
-    <button id="searchBtn" class="tool-btn" title="Поиск в интернете" onclick="toggleSearch()">🌐</button>
-    <input type="text" id="input" placeholder="Напиши сообщение..." autofocus>
+    <button id="searchBtn" class="tool-btn" title="Поиск" onclick="toggleSearch()">🌐</button>
+    <button id="micBtn" class="tool-btn" title="Голосовой ввод" onclick="toggleMic()">🎙️</button>
+    <button id="ttsBtn" class="tool-btn" title="Озвучка" onclick="toggleTTS()">🔊</button>
+    <input type="text" id="input" placeholder="Напиши или скажи..." autofocus>
     <button id="sendBtn" class="send-btn" onclick="send()">Отправить</button>
   </div>
 </div>
 
 <script>
-const chat = document.getElementById('chat');
-const input = document.getElementById('input');
-const sendBtn = document.getElementById('sendBtn');
-const typing = document.getElementById('typing');
-let thinkMode = false, searchMode = false;
-let userName = localStorage.getItem('medvedUserName') || null;
-let waitingForName = false;
-let chatHistory = [];
+const chat=document.getElementById('chat'),input=document.getElementById('input'),sendBtn=document.getElementById('sendBtn'),typing=document.getElementById('typing');
+let thinkMode=false,searchMode=false,ttsOn=false,listening=false,recog=null;
+let persona='wise';
+let userName=localStorage.getItem('medvedUserName')||null;
+let waitingForName=false;
+let chatHistory=JSON.parse(localStorage.getItem('medvedHistory')||'[]');
+const themes=['dark','light','honey'];let themeIdx=0;
 
-input.addEventListener('keydown', function(e) { if (e.key === 'Enter') send(); });
+if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{});}
 
-function startChat() {
-  document.getElementById('landing').style.display = 'none';
-  document.getElementById('chatScreen').style.display = 'flex';
-  if (userName) addMsg('С возвращением, ' + userName + '! 🐻 Рад тебя видеть снова.', 'bot');
-  else { addMsg('Привет, путник! 🐻 Я Медвед — хранитель леса. Как тебя зовут?', 'bot'); waitingForName = true; }
+input.addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+
+function startChat(){
+  document.getElementById('landing').style.display='none';
+  document.getElementById('chatScreen').style.display='flex';
+  // Восстановить историю
+  if(chatHistory.length){chatHistory.forEach(m=>addMsg(m.content,m.role,true));}
+  if(userName)addMsg('С возвращением, '+userName+'! 🐻','bot');
+  else{addMsg('Привет, путник! 🐻 Я Медвед. Как тебя зовут?','bot');waitingForName=true;}
   input.focus();
 }
 
-function resetChat() {
-  localStorage.removeItem('medvedUserName');
-  userName = null; chatHistory = []; waitingForName = false;
-  chat.innerHTML = ''; chat.appendChild(typing);
-  document.getElementById('chatScreen').style.display = 'none';
-  document.getElementById('landing').style.display = 'flex';
+function resetChat(){
+  localStorage.removeItem('medvedUserName');localStorage.removeItem('medvedHistory');
+  userName=null;chatHistory=[];waitingForName=false;
+  chat.innerHTML='';chat.appendChild(typing);
+  document.getElementById('chatScreen').style.display='none';
+  document.getElementById('landing').style.display='flex';
 }
 
-function setMode(t) {
-  thinkMode = t;
-  document.getElementById('modeFast').classList.toggle('active', !t);
-  document.getElementById('modeThink').classList.toggle('active', t);
+function setMode(t){thinkMode=t;document.getElementById('modeFast').classList.toggle('active',!t);document.getElementById('modeThink').classList.toggle('active',t);}
+function toggleSearch(){searchMode=!searchMode;document.getElementById('searchBtn').classList.toggle('active',searchMode);}
+function toggleTTS(){ttsOn=!ttsOn;document.getElementById('ttsBtn').classList.toggle('active',ttsOn);}
+function cycleTheme(){themeIdx=(themeIdx+1)%themes.length;document.body.dataset.theme=themes[themeIdx];}
+
+function md(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\*(.+?)\*/g,'<i>$1</i>').replace(/`(.+?)`/g,'<code>$1</code>');}
+
+function speak(t){if(!ttsOn||!('speechSynthesis' in window))return;const clean=t.replace(/[*#`>]/g,'').slice(0,400);const u=new SpeechSynthesisUtterance(clean);u.lang='ru-RU';speechSynthesis.speak(u);}
+
+function toggleMic(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert('Голосовой ввод не поддерживается в этом браузере 😢');return;}
+  if(listening){recog.stop();return;}
+  recog=new SR();recog.lang='ru-RU';
+  document.getElementById('micBtn').classList.add('listening');listening=true;
+  recog.onresult=e=>{input.value=e.results[0][0].transcript;};
+  recog.onend=()=>{document.getElementById('micBtn').classList.remove('listening');listening=false;if(input.value.trim())send();};
+  recog.start();
 }
 
-function toggleSearch() {
-  searchMode = !searchMode;
-  document.getElementById('searchBtn').classList.toggle('active', searchMode);
-}
-
-async function send() {
-  const text = input.value.trim();
-  if (!text) return;
-
-  if (waitingForName && text) {
-    userName = text;
-    localStorage.setItem('medvedUserName', userName);
-    waitingForName = false;
-    addMsg(text, 'user');
-    const w = 'Приятно познакомиться, ' + userName + '! 🍯 Я запомню тебя.';
-    addMsg(w, 'bot');
-    chatHistory.push({ role: 'user', content: 'Меня зовут ' + userName });
-    chatHistory.push({ role: 'assistant', content: w });
-    input.value = '';
-    return;
+async function send(){
+  const text=input.value.trim();if(!text)return;
+  if(waitingForName&&text){
+    userName=text;localStorage.setItem('medvedUserName',userName);waitingForName=false;
+    addMsg(text,'user');const w='Приятно познакомиться, '+userName+'! 🍯';addMsg(w,'bot');speak(w);
+    pushHist('user','Меня зовут '+userName);pushHist('assistant',w);input.value='';return;
   }
-
-  addMsg(text, 'user');
-  input.value = '';
-  sendBtn.disabled = true;
-  typing.textContent = thinkMode ? 'Медвед глубоко размышляет... 🧠' : (searchMode ? 'Медвед ищет в интернете... 🌐' : 'Медвед думает...');
-  typing.style.display = 'block';
-  chat.scrollTop = chat.scrollHeight;
-
-  try {
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, history: chatHistory.slice(-10), userName, think: thinkMode, search: searchMode })
-    });
-    const data = await res.json();
-    typing.style.display = 'none';
-    if (data.error) addMsg(data.error + ' 😢', 'bot');
-    else {
-      if (data.thinking) addThinking(data.thinking);
-      addMsg(data.reply, 'bot');
-      if (data.sources && data.sources.length) addSources(data.sources);
-      chatHistory.push({ role: 'user', content: text });
-      chatHistory.push({ role: 'assistant', content: data.reply });
+  addMsg(text,'user');input.value='';sendBtn.disabled=true;
+  typing.style.display='block';chat.scrollTop=chat.scrollHeight;
+  try{
+    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:text,history:chatHistory.slice(-10),userName,think:thinkMode,search:searchMode,persona})});
+    const data=await res.json();typing.style.display='none';
+    if(data.error)addMsg(data.error+' 😢','bot');
+    else{
+      if(data.thinking)addThinking(data.thinking);
+      addMsg(data.reply,'bot');speak(data.reply);
+      if(data.sources&&data.sources.length)addSources(data.sources);
+      pushHist('user',text);pushHist('assistant',data.reply);
     }
-  } catch (e) {
-    typing.style.display = 'none';
-    addMsg('Ошибка связи 😢 Попробуй обновить страницу.', 'bot');
-  }
-  sendBtn.disabled = false;
-  input.focus();
-  chat.scrollTop = chat.scrollHeight;
+  }catch(e){typing.style.display='none';addMsg('Ошибка связи 😢','bot');}
+  sendBtn.disabled=false;input.focus();chat.scrollTop=chat.scrollHeight;
 }
 
-function addMsg(text, role) {
-  const div = document.createElement('div');
-  div.className = 'msg ' + role;
-  div.textContent = text;
-  chat.insertBefore(div, typing);
+function pushHist(r,c){chatHistory.push({role:r,content:c});if(chatHistory.length>40)chatHistory=chatHistory.slice(-40);localStorage.setItem('medvedHistory',JSON.stringify(chatHistory));}
+
+function addMsg(text,role,instant){
+  const div=document.createElement('div');div.className='msg '+role;
+  if(role==='bot'&&!instant){ // печатает + markdown
+    let i=0;chat.insertBefore(div,typing);
+    const t=setInterval(()=>{i+=3;div.textContent=text.slice(0,i);chat.scrollTop=chat.scrollHeight;
+      if(i>=text.length){clearInterval(t);div.innerHTML=md(text);}},16);
+  }else{div.innerHTML=md(text);}
+  if(instant||role==='user')chat.insertBefore(div,typing);
 }
 
-function addThinking(text) {
-  const d = document.createElement('details');
-  d.className = 'thinking-box';
-  const s = document.createElement('summary');
-  s.textContent = '💭 Размышления Медведя (нажми)';
-  const c = document.createElement('div');
-  c.className = 'thinking-content';
-  c.textContent = text;
-  d.appendChild(s); d.appendChild(c);
-  chat.insertBefore(d, typing);
-}
-
-function addSources(list) {
-  const arr = Array.isArray(list) ? list : [list];
-  if (!arr.length) return;
-  const div = document.createElement('div');
-  div.className = 'sources-box';
-  const label = document.createElement('div');
-  label.className = 'label';
-  label.textContent = '🌐 Источники:';
-  div.appendChild(label);
-  arr.forEach(function(s, i) {
-    const a = document.createElement('a');
-    a.href = s.url; a.target = '_blank';
-    a.textContent = (i + 1) + '. ' + s.title;
-    div.appendChild(a);
-  });
-  chat.insertBefore(div, typing);
-}
+function addThinking(t){const d=document.createElement('details');d.className='thinking-box';const s=document.createElement('summary');s.textContent='💭 Размышления';const c=document.createElement('div');c.className='thinking-content';c.textContent=t;d.appendChild(s);d.appendChild(c);chat.insertBefore(d,typing);}
+function addSources(list){const arr=Array.isArray(list)?list:[list];if(!arr.length)return;const d=document.createElement('div');d.className='sources-box';const l=document.createElement('div');l.textContent='🌐 Источники:';d.appendChild(l);arr.forEach((s,i)=>{const a=document.createElement('a');a.href=s.url;a.target='_blank';a.textContent=(i+1)+'. '+s.title;d.appendChild(a);});chat.insertBefore(d,typing);}
 </script>
 </body>
 </html>
