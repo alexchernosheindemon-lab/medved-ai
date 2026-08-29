@@ -43,15 +43,15 @@
   .thinking-content{margin-top:8px;color:var(--muted);white-space:pre-wrap;font-style:italic;}
   .sources-box a{color:var(--accent);text-decoration:none;display:block;margin:4px 0;}
   .typing{align-self:flex-start;background:var(--surface);padding:12px 16px;border-radius:16px;border-bottom-left-radius:4px;color:var(--muted);font-style:italic;display:none;}
+  .voice-bar{display:none;align-items:center;gap:8px;padding:8px 20px;background:var(--panel);border-top:1px solid var(--line);font-size:13px;color:var(--muted);flex-wrap:wrap;}
+  .voice-bar.show{display:flex;}
+  .voice-bar select{max-width:220px;}
   .input-area{display:flex;gap:8px;padding:14px 20px;background:var(--surface);border-top:1px solid var(--line);}
   .tool-btn{width:46px;height:46px;border:none;border-radius:12px;background:var(--panel);font-size:20px;cursor:pointer;flex-shrink:0;}
   .tool-btn:hover{filter:brightness(1.2);}
   .tool-btn.active{background:var(--accent);box-shadow:0 0 0 2px var(--accent);}
   .tool-btn.listening{background:#f38ba8;animation:pulse 1s infinite;}
   @keyframes pulse{50%{opacity:.6;}}
-   .voice-bar{display:none;align-items:center;gap:8px;padding:8px 20px;background:var(--panel);border-top:1px solid var(--line);font-size:13px;color:var(--muted);flex-wrap:wrap;}
-  .voice-bar.show{display:flex;}
-  .voice-bar select{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:5px;font-size:13px;max-width:220px;}
   input{flex:1;padding:12px 16px;border:none;border-radius:12px;background:var(--panel);color:var(--text);font-size:15px;outline:none;}
   .send-btn{padding:12px 24px;border:none;border-radius:12px;background:var(--green);color:var(--bg);font-weight:bold;cursor:pointer;}
   .send-btn:disabled{opacity:.5;}
@@ -61,17 +61,6 @@
 <body data-theme="dark">
 <div id="landing">
   <div class="landing-content">
-     <div class="voice-bar" id="voiceBar">
-    <span>🔊 Голос:</span>
-    <select id="voiceSel" onchange="setVoice(this.value)"></select>
-    <span>Скорость:</span>
-    <select id="rateSel" onchange="setRate(this.value)">
-      <option value="1">1x</option>
-      <option value="1.2">1.2x</option>
-      <option value="1.35" selected>1.35x ⚡</option>
-      <option value="1.6">1.6x ⚡⚡</option>
-    </select>
-  </div>
     <span class="bear-mascot">🐻</span>
     <h1>Medved AI <span class="beta-badge">BETA</span></h1>
     <p class="subtitle">Мудрый медведь из русского леса.<br>Теперь он слышит, говорит и помнит тебя.</p>
@@ -99,6 +88,15 @@
     </div>
   </header>
   <div id="chat"><div class="typing" id="typing">Медвед думает...</div></div>
+  <div class="voice-bar" id="voiceBar">
+    <span>🔊 Голос:</span>
+    <select id="voiceSel" onchange="setVoice(this.value)"></select>
+    <span>Скорость:</span>
+    <select id="rateSel" onchange="setRate(this.value)">
+      <option value="1">1x</option><option value="1.2">1.2x</option>
+      <option value="1.35" selected>1.35x ⚡</option><option value="1.6">1.6x ⚡</option>
+    </select>
+  </div>
   <div class="input-area">
     <button id="searchBtn" class="tool-btn" title="Поиск" onclick="toggleSearch()">🌐</button>
     <button id="micBtn" class="tool-btn" title="Голосовой ввод" onclick="toggleMic()">🎙️</button>
@@ -116,16 +114,16 @@ let userName=localStorage.getItem('medvedUserName')||null;
 let waitingForName=false;
 let chatHistory=JSON.parse(localStorage.getItem('medvedHistory')||'[]');
 const themes=['dark','light','honey'];let themeIdx=0;
+let ttsVoice=null,ttsRate=1.35;
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{});}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(function(){});}
 
-input.addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+input.addEventListener('keydown',function(e){if(e.key==='Enter')send();});
 
 function startChat(){
   document.getElementById('landing').style.display='none';
   document.getElementById('chatScreen').style.display='flex';
-  // Восстановить историю
-  if(chatHistory.length){chatHistory.forEach(m=>addMsg(m.content,m.role,true));}
+  if(chatHistory.length){chatHistory.forEach(function(m){addMsg(m.content,m.role,true);});}
   if(userName)addMsg('С возвращением, '+userName+'! 🐻','bot');
   else{addMsg('Привет, путник! 🐻 Я Медвед. Как тебя зовут?','bot');waitingForName=true;}
   input.focus();
@@ -152,85 +150,82 @@ function cycleTheme(){themeIdx=(themeIdx+1)%themes.length;document.body.dataset.
 function md(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
   .replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\*(.+?)\*/g,'<i>$1</i>').replace(/`(.+?)`/g,'<code>$1</code>');}
 
-let ttsVoice=null,ttsRate=1.35;
-
 function cleanForSpeech(t){
   return t
-    .replace(/[*#`>_~]/g,'')                                   // markdown
-    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}\u{2190}-\u{21FF}]/gu,'') // смайлики
+    .replace(/[*#`>_~]/g,'')
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}\u{2190}-\u{21FF}]/gu,'')
     .replace(/\s+/g,' ')
     .trim();
 }
 
 function loadVoices(){
   if(!('speechSynthesis' in window))return;
-  const vs=speechSynthesis.getVoices();
-  const sel=document.getElementById('voiceSel');
+  var vs=speechSynthesis.getVoices();
+  var sel=document.getElementById('voiceSel');
   if(!sel)return;
   sel.innerHTML='';
-  const ru=vs.filter(v=>v.lang.toLowerCase().startsWith('ru'));
-  const rest=vs.filter(v=>!v.lang.toLowerCase().startsWith('ru'));
-  [...ru,...rest].forEach(v=>{
-    const o=document.createElement('option');
+  var ru=vs.filter(function(v){return v.lang.toLowerCase().indexOf('ru')===0;});
+  var rest=vs.filter(function(v){return v.lang.toLowerCase().indexOf('ru')!==0;});
+  ru.concat(rest).forEach(function(v){
+    var o=document.createElement('option');
     o.value=v.name;
-    o.textContent=(v.lang.toLowerCase().startsWith('ru')?'🇷🇺 ':'')+v.name;
+    o.textContent=(v.lang.toLowerCase().indexOf('ru')===0?'🇷🇺 ':'')+v.name;
     sel.appendChild(o);
   });
-  const saved=localStorage.getItem('medvedVoice');
+  var saved=localStorage.getItem('medvedVoice');
   if(saved)sel.value=saved;
-  if(sel.value)ttsVoice=vs.find(v=>v.name===sel.value)||null;
+  if(sel.value)ttsVoice=vs.find(function(v){return v.name===sel.value;})||null;
 }
 if('speechSynthesis' in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices;}
 
-function setVoice(n){localStorage.setItem('medvedVoice',n);const vs=speechSynthesis.getVoices();ttsVoice=vs.find(v=>v.name===n)||null;}
+function setVoice(n){localStorage.setItem('medvedVoice',n);var vs=speechSynthesis.getVoices();ttsVoice=vs.find(function(v){return v.name===n;})||null;}
 function setRate(r){ttsRate=parseFloat(r);}
 
 function speak(t){
   if(!ttsOn||!('speechSynthesis' in window))return;
   speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(cleanForSpeech(t).slice(0,500));
-  u.lang='ru-RU';
-  u.rate=ttsRate;      // ⚡ быстрее
-  u.pitch=1;
+  var u=new SpeechSynthesisUtterance(cleanForSpeech(t).slice(0,500));
+  u.lang='ru-RU';u.rate=ttsRate;u.pitch=1;
   if(ttsVoice)u.voice=ttsVoice;
   speechSynthesis.speak(u);
 }
 
 function toggleMic(){
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){alert('Голосовой ввод не поддерживается в этом браузере 😢');return;}
   if(listening){recog.stop();return;}
   recog=new SR();recog.lang='ru-RU';
   document.getElementById('micBtn').classList.add('listening');listening=true;
-  recog.onresult=e=>{input.value=e.results[0][0].transcript;};
-  recog.onend=()=>{document.getElementById('micBtn').classList.remove('listening');listening=false;if(input.value.trim())send();};
+  recog.onresult=function(e){input.value=e.results[0][0].transcript;};
+  recog.onend=function(){document.getElementById('micBtn').classList.remove('listening');listening=false;if(input.value.trim())send();};
   recog.start();
 }
+
 function extractName(t){
-  const m=t.match(/(?:меня\s+зовут|зовут|мо[её]\s+имя|я)\s+([^\s,.;!?]+)/i);
-  let name=m?m[1]:t.trim().split(/\s+/)[0];
+  var m=t.match(/(?:меня\s+зовут|зовут|мо[её]\s+имя|я)\s+([^\s,.;!?]+)/i);
+  var name=m?m[1]:t.trim().split(/\s+/)[0];
   name=(name||'').replace(/[.,!?;:]+$/,'');
-  if(name)name=name[0].toUpperCase()+name.slice(1);
+  if(name)name=name.charAt(0).toUpperCase()+name.slice(1);
   return name||'друг';
 }
+
 async function send(){
-  const text=input.value.trim();if(!text)return;
-    if(waitingForName&&text){
+  var text=input.value.trim();if(!text)return;
+  if(waitingForName&&text){
     userName=extractName(text);
     localStorage.setItem('medvedUserName',userName);waitingForName=false;
     addMsg(text,'user');
-    const w='Приятно познакомиться, '+userName+'! 🍯';
+    var w='Приятно познакомиться, '+userName+'! 🍯';
     addMsg(w,'bot');speak(w);
     pushHist('user',text);pushHist('assistant',w);
     input.value='';return;
   }
-  }
   addMsg(text,'user');input.value='';sendBtn.disabled=true;
   typing.style.display='block';chat.scrollTop=chat.scrollHeight;
   try{
-    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({message:text,history:chatHistory.slice(-10),userName,think:thinkMode,search:searchMode,persona})});
-    const data=await res.json();typing.style.display='none';
+    var res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:text,history:chatHistory.slice(-10),userName:userName,think:thinkMode,search:searchMode,persona:persona})});
+    var data=await res.json();typing.style.display='none';
     if(data.error)addMsg(data.error+' 😢','bot');
     else{
       if(data.thinking)addThinking(data.thinking);
@@ -245,17 +240,16 @@ async function send(){
 function pushHist(r,c){chatHistory.push({role:r,content:c});if(chatHistory.length>40)chatHistory=chatHistory.slice(-40);localStorage.setItem('medvedHistory',JSON.stringify(chatHistory));}
 
 function addMsg(text,role,instant){
-  const div=document.createElement('div');div.className='msg '+role;
-  if(role==='bot'&&!instant){ // печатает + markdown
-    let i=0;chat.insertBefore(div,typing);
-    const t=setInterval(()=>{i+=3;div.textContent=text.slice(0,i);chat.scrollTop=chat.scrollHeight;
+  var div=document.createElement('div');div.className='msg '+role;
+  if(role==='bot'&&!instant){
+    var i=0;chat.insertBefore(div,typing);
+    var t=setInterval(function(){i+=3;div.textContent=text.slice(0,i);chat.scrollTop=chat.scrollHeight;
       if(i>=text.length){clearInterval(t);div.innerHTML=md(text);}},16);
-  }else{div.innerHTML=md(text);}
-  if(instant||role==='user')chat.insertBefore(div,typing);
+  }else{div.innerHTML=md(text);chat.insertBefore(div,typing);}
 }
 
-function addThinking(t){const d=document.createElement('details');d.className='thinking-box';const s=document.createElement('summary');s.textContent='💭 Размышления';const c=document.createElement('div');c.className='thinking-content';c.textContent=t;d.appendChild(s);d.appendChild(c);chat.insertBefore(d,typing);}
-function addSources(list){const arr=Array.isArray(list)?list:[list];if(!arr.length)return;const d=document.createElement('div');d.className='sources-box';const l=document.createElement('div');l.textContent='🌐 Источники:';d.appendChild(l);arr.forEach((s,i)=>{const a=document.createElement('a');a.href=s.url;a.target='_blank';a.textContent=(i+1)+'. '+s.title;d.appendChild(a);});chat.insertBefore(d,typing);}
+function addThinking(t){var d=document.createElement('details');d.className='thinking-box';var s=document.createElement('summary');s.textContent='💭 Размышления';var c=document.createElement('div');c.className='thinking-content';c.textContent=t;d.appendChild(s);d.appendChild(c);chat.insertBefore(d,typing);}
+function addSources(list){var arr=Array.isArray(list)?list:[list];if(!arr.length)return;var d=document.createElement('div');d.className='sources-box';var l=document.createElement('div');l.textContent='🌐 Источники:';d.appendChild(l);arr.forEach(function(s,i){var a=document.createElement('a');a.href=s.url;a.target='_blank';a.textContent=(i+1)+'. '+s.title;d.appendChild(a);});chat.insertBefore(d,typing);}
 </script>
 </body>
 </html>
