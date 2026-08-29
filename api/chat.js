@@ -1,59 +1,61 @@
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Метод не поддерживается' });
-  }
+const MODEL = 'qwen/qwen3.8-27b';
 
-  const { message, history = [], userName = '' } = req.body;
+const BASE_PROMPT = 'Ты — Медвед, мудрый и добрый ИИ-медведь из глубин русского леса. Тебе сотни лет, ты видел много зим и знаешь жизнь. Говоришь тепло, спокойно, с медвежьей мудростью и лёгким юмором. Любишь мёд, лес и природу. Даёшь вдумчивые, полезные советы. Отвечай по-русски, кратко но содержательно.';
 
-  // Быстрый ответ на "что ты умеешь"
-  const capPattern = /умеешь|можешь|возможност|функции|расскажи о себе|что ты делаешь/i;
-  if (message.length <= 35 && capPattern.test(message)) {
-    return res.status(200).json({
-      reply: [
-        'Вот что я умею, друг мой:',
-        '',
-        '💬 Общаться и отвечать на любые вопросы',
-        '🧠 Помнить твоё имя и наш разговор',
-        '⚡ Отвечать очень быстро — мой мозг живёт в облаке',
-        '',
-        '⚠️ Я ещё расту! Это бета-версия, и впереди много новых умений. 🐻'
-      ].join('\n')
-    });
-  }
+const PERSONAS = {
+  wise: '',
+  joker: ' Сейчас ты в настроении Шутника: отпускай добрые шутки и каламбуры, но оставайся полезным.',
+  philosopher: ' Сейчас ты Философ: отвечай глубоко, с размышлениями о смысле жизни, природе и бытии.',
+  storyteller: ' Сейчас ты Сказитель: рассказывай как у костра, с образами, присказками и лесными историями.'
+};
 
-  let systemPrompt = 'Ты — Медвед, мудрый и добрый ИИ-медведь из глубин русского леса. Тебе сотни лет, ты видел много зим и знаешь жизнь. Говоришь тепло, спокойно, с медвежьей мудростью и лёгким юмором. Любишь мёд, лес и природу. Даёшь вдумчивые, полезные советы. Отвечай по-русски, кратко но содержательно.';
-  if (userName) {
-    systemPrompt += ` Пользователя зовут ${userName}. Обращайся к нему по имени.`;
-  }
+const CAP_TEXT = [
+  'Вот что я умею, друг мой:', '',
+  '⚡ Быстрые ответы и 🧠 размышление',
+  '🌐 Поиск в интернете',
+  '🎙️ Слушать тебя и отвечать вслух',
+  '🎭 Менять характер: мудрый, шутник, философ, сказитель',
+  '💬 Помнить твоё имя и весь разговор', '',
+  '⚠️ Я ещё расту! Это бета-версия. 🐻'
+].join('\n');
 
-  const messages = [
-    { role: 'system', content: systemPrompt },
-    ...history,
-    { role: 'user', content: message }
-  ];
+function stripTags(s){return s.replace(/<[^>]+>/g,'');}
+function decodeEntities(s){return s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'");}
 
-  try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'qwen/qwen3.8-27b',
-        messages: messages
-      })
-    });
+async function searchWeb(q){
+  try{
+    const r=await fetch('https://html.duckduckgo.com/html/?q='+encodeURIComponent(q),{headers:{'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}});
+    const html=await r.text();
+    const a=html.match(/<a[^>]*class="result__a"[^>]*>[\s\S]*?<\/a>/g)||[];
+    const s=html.match(/<(?:a|td)[^>]*class="result__snippet"[^>]*>[\s\S]*?<\/(?:a|td)>/g)||[];
+    const out=[];const max=Math.min(a.length,4);
+    for(let i=0;i<max;i++){const t=a[i];const href=(t.match(/href="([^"]+)"/)||[])[1]||'';const title=decodeEntities(stripTags(t)).trim();const snip=i<s.length?decodeEntities(stripTags(s[i])).trim():'';if(title)out.push({title,url:href,snippet:snip});}
+    return out;
+  }catch(e){return[];}
+}
 
-    const data = await response.json();
+export default async function handler(req,res){
+  if(req.method!=='POST')return res.status(405).json({error:'Метод не поддерживается'});
+  const {message='',history=[],userName='',think=false,search=false,image=null,persona='wise'}=req.body;
 
-    if (data.error) {
-      return res.status(500).json({ error: 'Ой, лапка! Нейросеть ответила ошибкой: ' + data.error.message });
-    }
+  const cap=/умеешь|можешь|возможност|функции|расскажи о себе|что ты делаешь/i;
+  if(message.length<=35&&cap.test(message))return res.status(200).json({reply:CAP_TEXT});
 
-    const reply = data.choices[0].message.content;
-    return res.status(200).json({ reply });
-  } catch (err) {
-    return res.status(500).json({ error: 'Ой, лапка! Не смог связаться с нейросетью. Попробуй ещё раз.' });
-  }
+  if(image)return res.status(200).json({reply:'Прости, в облачной версии я пока не вижу картинки 😢 Это умение вернётся позже. Спроси словами!'});
+
+  let sys=BASE_PROMPT+(PERSONAS[persona]||'');
+  if(userName)sys+=` Пользователя зовут ${userName}. Обращайся к нему по имени.`;
+  if(think)sys+=' Сейчас режим размышления: сначала кратко рассуди шаг за шагом, затем дай ответ.';
+
+  let content=message;let sources=[];
+  if(search&&message){const f=await searchWeb(message);if(f.length){sources=f;content='Результаты поиска:\n'+f.map((r,i)=>`${i+1}. ${r.title}: ${r.snippet}`).join('\n')+`\n\nОтветь на вопрос по-русски: "${message}"`;}}
+
+  const messages=[{role:'system',content:sys},...history,{role:'user',content}];
+  try{
+    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':`Bearer ${process.env.GROQ_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({model:MODEL,messages})});
+    const data=await resp.json();
+    if(data.error)return res.status(500).json({error:'Ой, лапка! '+data.error.message});
+    const m=data.choices[0].message;
+    return res.status(200).json({reply:m.content,thinking:m.reasoning_content||m.reasoning||null,sources});
+  }catch(e){return res.status(500).json({error:'Ой, лапка! Не смог связаться с нейросетью.'});}
 }
