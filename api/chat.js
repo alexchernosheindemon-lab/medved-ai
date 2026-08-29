@@ -5,7 +5,7 @@ const BASE_PROMPT='Ты — Медвед, дружелюбный и очень �
 
 const PERSONAS={wise:'',joker:' Сейчас ты Шутник: добрые шутки, но оставайся точным.',philosopher:' Сейчас ты Философ: отвечай глубоко.',storyteller:' Сейчас ты Сказитель: образно, как у костра, но факты не искажай.'};
 
-const CAP_TEXT=['Вот что я умею, друг мой:','','🧠 Ум уровня больших моделей','🔍 Сам ищу в интернете, когда нужно','🖼️ Понимать картинки','💬 Помнить весь разговор и несколько чатов','🎙️ Слушать и говорить','🎭 Менять характер','','⚠️ Я ещё расту! Это бета. 🐻'].join('\n');
+const CAP_TEXT=['Вот что я умею, друг мой:','','🧠 Ум уровня больших моделей','🔍 Сам ищу в интернете, когда нужно','🖼️ Понимать картинки','📚 Решать домашку пошагово','💬 Помнить весь разговор и несколько чатов','🎙️ Слушать и говорить','🎭 Менять характер','','⚠️ Я ещё расту! Это бета. 🐻'].join('\n');
 
 function stripTags(s){return s.replace(/<[^>]+>/g,'');}
 function dec(s){return s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&nbsp;/g,' ');}
@@ -37,7 +37,7 @@ async function askVision(img,prompt){
 
 export default async function handler(req,res){
   if(req.method!=='POST')return res.status(405).json({error:'Метод не поддерживается'});
-  const {message='',history=[],memory='',userName='',think=false,image=null,persona='wise'}=req.body;
+  const {message='',history=[],memory='',userName='',think=false,image=null,persona='wise',hw=false}=req.body;
 
   const cap=/умеешь|можешь|возможност|функции|расскажи о себе/i;
   if(message.length<=35&&cap.test(message))return res.status(200).json({reply:CAP_TEXT});
@@ -46,16 +46,15 @@ export default async function handler(req,res){
   if(userName)sys+=` Пользователя зовут ${userName}.`;
   if(memory)sys+=` Краткая память о прошлом: ${memory}`;
   if(think)sys+=' РЕЖИМ РАЗМЫШЛЕНИЯ: рассуждай пошагово, проверь себя, затем дай ответ.';
+  if(hw)sys+=' РЕЖИМ ДОМАШНЕГО ЗАДАНИЯ: ты учитель. Решай ПОШАГОВО, объясняй каждый шаг простыми словами, проверяй себя и в конце дай чёткий ответ. Не просто ответ — научи понимать.';
 
   let content=message;let sources=[];
 
-  // Картинка -> зрение
   if(image){
     const v=await askVision(image,'Опиши подробно по-русски, что изображено.');
     if(v===null)return res.status(200).json({reply:'Зрение не подключено 😢 Добавь в Vercel переменную GEMINI_API_KEY (бесплатный ключ Google), и я начну видеть картинки!'});
     content=`Пользователь прислал картинку. Её описание: "${v}". Теперь ответь на его сообщение (или прокомментируй картинку) в своём характере. Сообщение: "${message}"`;
   }
-  // Авто-поиск
   else if(message&&await decideSearch(message)){
     const [web,wiki]=await Promise.all([searchWeb(message),searchWiki(message)]);
     const found=wiki.concat(web);
