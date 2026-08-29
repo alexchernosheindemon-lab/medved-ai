@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medved AI 🐻</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #1e1e2e; color: #cdd6f4; }
+  .beta-badge { background: #fab387; color: #1e1e2e; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 6px; letter-spacing: 1px; vertical-align: middle; }
+  #landing { position: fixed; inset: 0; background: linear-gradient(135deg, #1e1e2e, #2a2438, #1e1e2e); display: flex; align-items: center; justify-content: center; z-index: 100; overflow: auto; }
+  .landing-content { text-align: center; padding: 40px 24px; max-width: 640px; animation: fadeIn 0.8s; }
+  .bear-mascot { font-size: 96px; animation: bounce 2.2s ease-in-out infinite; display: inline-block; }
+  @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+  .landing-content h1 { font-size: 50px; margin: 14px 0 6px; color: #f9e2af; }
+  .subtitle { color: #a6adc8; font-size: 18px; margin-bottom: 32px; line-height: 1.5; }
+  #startBtn { padding: 17px 52px; font-size: 21px; font-weight: bold; border: none; border-radius: 16px; background: linear-gradient(135deg, #a6e3a1, #94e2d5); color: #1e1e2e; cursor: pointer; transition: 0.2s; }
+  #startBtn:hover { transform: translateY(-3px); }
+  .beta-warning { color: #fab387; font-size: 13px; margin-top: 22px; }
+  #chatScreen { display: none; flex-direction: column; height: 100vh; }
+  header { background: #313244; padding: 14px 24px; font-size: 20px; font-weight: bold; border-bottom: 1px solid #45475a; }
+  #chat { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; }
+  .msg { max-width: 75%; padding: 12px 16px; border-radius: 16px; line-height: 1.5; animation: fadeIn 0.3s; white-space: pre-wrap; word-wrap: break-word; }
+  .user { align-self: flex-end; background: #89b4fa; color: #1e1e2e; border-bottom-right-radius: 4px; }
+  .bot { align-self: flex-start; background: #313244; border-bottom-left-radius: 4px; }
+  .typing { align-self: flex-start; background: #313244; padding: 12px 16px; border-radius: 16px; border-bottom-left-radius: 4px; color: #a6adc8; font-style: italic; display: none; }
+  .input-area { display: flex; gap: 8px; padding: 16px 24px; background: #313244; border-top: 1px solid #45475a; }
+  input { flex: 1; padding: 12px 16px; border: none; border-radius: 12px; background: #45475a; color: #cdd6f4; font-size: 15px; outline: none; }
+  button.send-btn { padding: 12px 24px; border: none; border-radius: 12px; background: #a6e3a1; color: #1e1e2e; font-size: 15px; font-weight: bold; cursor: pointer; }
+  button.send-btn:disabled { opacity: 0.5; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<div id="landing">
+  <div class="landing-content">
+    <span class="bear-mascot">🐻</span>
+    <h1>Medved AI <span class="beta-badge">BETA</span></h1>
+    <p class="subtitle">Мудрый медведь из русского леса.<br>Теперь он живёт в облаке и не спит. 🌙</p>
+    <button id="startBtn" onclick="startChat()">Начать общение</button>
+    <p class="beta-warning">⚠️ Это бета-версия. Новые функции будут добавляться в будущем.</p>
+  </div>
+</div>
+
+<div id="chatScreen">
+  <header>🐻 Medved AI <span class="beta-badge">BETA</span></header>
+  <div id="chat">
+    <div class="typing" id="typing">Медвед думает...</div>
+  </div>
+  <div class="input-area">
+    <input type="text" id="input" placeholder="Напиши сообщение..." autofocus>
+    <button id="sendBtn" class="send-btn" onclick="send()">Отправить</button>
+  </div>
+</div>
+
+<script>
+const chat = document.getElementById('chat');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('sendBtn');
+const typing = document.getElementById('typing');
+let userName = localStorage.getItem('medvedUserName') || null;
+let waitingForName = false;
+let chatHistory = [];
+
+input.addEventListener('keydown', function(e) { if (e.key === 'Enter') send(); });
+
+function startChat() {
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('chatScreen').style.display = 'flex';
+  if (userName) {
+    addMsg('С возвращением, ' + userName + '! 🐻 Рад тебя видеть снова.', 'bot');
+  } else {
+    addMsg('Привет, путник! 🐻 Я Медвед — хранитель леса. Как тебя зовут?', 'bot');
+    waitingForName = true;
+  }
+  input.focus();
+}
+
+async function send() {
+  const text = input.value.trim();
+  if (!text) return;
+
+  if (waitingForName && text) {
+    userName = text;
+    localStorage.setItem('medvedUserName', userName);
+    waitingForName = false;
+    addMsg(text, 'user');
+    const welcome = 'Приятно познакомиться, ' + userName + '! 🍯 Я запомню тебя. Спрашивай о чём угодно.';
+    addMsg(welcome, 'bot');
+    chatHistory.push({ role: 'user', content: 'Меня зовут ' + userName });
+    chatHistory.push({ role: 'assistant', content: welcome });
+    input.value = '';
+    return;
+  }
+
+  addMsg(text, 'user');
+  input.value = '';
+  sendBtn.disabled = true;
+  typing.style.display = 'block';
+  chat.scrollTop = chat.scrollHeight;
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: text,
+        history: chatHistory.slice(-10),
+        userName: userName
+      })
+    });
+    const data = await res.json();
+    typing.style.display = 'none';
+    if (data.error) {
+      addMsg(data.error + ' 😢', 'bot');
+    } else {
+      addMsg(data.reply, 'bot');
+      chatHistory.push({ role: 'user', content: text });
+      chatHistory.push({ role: 'assistant', content: data.reply });
+    }
+  } catch (err) {
+    typing.style.display = 'none';
+    addMsg('Ошибка связи 😢 Попробуй обновить страницу.', 'bot');
+  }
+  sendBtn.disabled = false;
+  input.focus();
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function addMsg(text, role) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.textContent = text;
+  chat.insertBefore(div, typing);
+}
+</script>
+</body>
+</html>
