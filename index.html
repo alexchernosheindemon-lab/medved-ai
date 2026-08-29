@@ -7,11 +7,25 @@
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#1e1e2e">
 <link rel="icon" href="/icon.svg">
-   #landing{display:block;overflow-y:auto;}
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{--bg:#1e1e2e;--surface:#313244;--text:#cdd6f4;--muted:#a6adc8;--accent:#89b4fa;--green:#a6e3a1;--panel:#181825;--line:#45475a;
+       font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);}
+  body[data-theme=light]{--bg:#eff1f5;--surface:#fff;--text:#333;--muted:#667;--accent:#1e66f5;--green:#40a02b;--panel:#e6e9ef;--line:#ccd0da;}
+  body[data-theme=honey]{--bg:#2a2018;--surface:#3a2d1e;--text:#f5e6c8;--muted:#c9b28a;--accent:#f9e2af;--green:#fab387;--panel:#241a10;--line:#5a4630;}
+  .beta-badge{background:var(--green);color:var(--bg);font-size:11px;font-weight:bold;padding:3px 8px;border-radius:6px;letter-spacing:1px;vertical-align:middle;}
+  /* --- Титульная страница --- */
+  #landing{position:fixed;inset:0;background:linear-gradient(135deg,var(--bg),var(--panel),var(--bg));z-index:100;overflow-y:auto;display:block;}
   .page{max-width:860px;margin:0 auto;padding:40px 24px 60px;}
   .page section{margin-bottom:56px;text-align:center;}
   .page h2{font-size:28px;color:var(--accent);margin-bottom:24px;}
+  .bear-mascot{font-size:96px;animation:bounce 2.2s ease-in-out infinite;display:inline-block;}
+  @keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-14px);}}
   .hero h1{font-size:50px;margin:14px 0 6px;color:var(--accent);}
+  .subtitle{color:var(--muted);font-size:18px;margin-bottom:30px;line-height:1.5;}
+  #startBtn{padding:17px 52px;font-size:21px;font-weight:bold;border:none;border-radius:16px;background:var(--green);color:var(--bg);cursor:pointer;transition:.2s;}
+  #startBtn:hover{transform:translateY(-3px);}
+  .beta-warning{color:var(--green);font-size:13px;margin-top:20px;}
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;text-align:left;}
   .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;transition:.2s;}
@@ -21,25 +35,11 @@
   .card p{color:var(--muted);font-size:13px;}
   .privacy{margin-top:18px;background:var(--panel);border:1px solid var(--green);border-radius:14px;padding:16px;}
   .timeline{border-left:3px solid var(--accent);max-width:520px;margin:0 auto;padding-left:24px;display:flex;flex-direction:column;gap:14px;text-align:left;}
-  .ver{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 18px;color:var(--muted
-<style>
-  *{margin:0;padding:0;box-sizing:border-box;}
-  body{--bg:#1e1e2e;--surface:#313244;--text:#cdd6f4;--muted:#a6adc8;--accent:#89b4fa;--green:#a6e3a1;--panel:#181825;--line:#45475a;
-       font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);}
-  body[data-theme=light]{--bg:#eff1f5;--surface:#fff;--text:#333;--muted:#667;--accent:#1e66f5;--green:#40a02b;--panel:#e6e9ef;--line:#ccd0da;}
-  body[data-theme=honey]{--bg:#2a2018;--surface:#3a2d1e;--text:#f5e6c8;--muted:#c9b28a;--accent:#f9e2af;--green:#fab387;--panel:#241a10;--line:#5a4630;}
-  .beta-badge{background:var(--green);color:var(--bg);font-size:11px;font-weight:bold;padding:3px 8px;border-radius:6px;letter-spacing:1px;vertical-align:middle;}
-  #landing{position:fixed;inset:0;background:linear-gradient(135deg,var(--bg),var(--panel),var(--bg));display:flex;align-items:center;justify-content:center;z-index:100;overflow:auto;}
-  .landing-content{text-align:center;padding:40px 24px;max-width:640px;animation:fadeIn .8s;}
-  .bear-mascot{font-size:96px;animation:bounce 2.2s ease-in-out infinite;display:inline-block;}
-  @keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-14px);}}
-  .landing-content h1{font-size:50px;margin:14px 0 6px;color:var(--accent);}
-  .subtitle{color:var(--muted);font-size:18px;margin-bottom:30px;line-height:1.5;}
-  .features{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:32px;}
-  .feature{background:var(--surface);padding:10px 18px;border-radius:14px;font-size:14px;border:1px solid var(--line);}
-  #startBtn{padding:17px 52px;font-size:21px;font-weight:bold;border:none;border-radius:16px;background:var(--green);color:var(--bg);cursor:pointer;transition:.2s;}
-  #startBtn:hover{transform:translateY(-3px);}
-  .beta-warning{color:var(--green);font-size:13px;margin-top:20px;}
+  .ver{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 18px;color:var(--muted);font-size:14px;}
+  .ver b{color:var(--green);}
+  .foot p{color:var(--muted);font-size:14px;}
+  .disclaimer-line{margin-top:8px;font-size:12px;opacity:.8;}
+  /* --- Чат --- */
   #chatScreen{display:none;flex-direction:column;height:100vh;}
   header{background:var(--surface);padding:12px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
   .hgroup{display:flex;gap:6px;align-items:center;background:var(--bg);padding:4px;border-radius:10px;flex-wrap:wrap;}
@@ -69,26 +69,64 @@
   @keyframes pulse{50%{opacity:.6;}}
   input{flex:1;padding:12px 16px;border:none;border-radius:12px;background:var(--panel);color:var(--text);font-size:15px;outline:none;}
   .send-btn{padding:12px 24px;border:none;border-radius:12px;background:var(--green);color:var(--bg);font-weight:bold;cursor:pointer;}
-  .send-btn:disabled{opacity:.5;}  
+  .send-btn:disabled{opacity:.5;}
   .disclaimer{text-align:center;font-size:11px;color:var(--muted);padding:6px 12px;background:var(--surface);border-top:1px solid var(--line);opacity:.85;}
   @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 </style>
 </head>
 <body data-theme="dark">
+
+<!-- ТИТУЛЬНАЯ СТРАНИЦА -->
 <div id="landing">
-  <div class="landing-content">
-    <span class="bear-mascot">🐻</span>
-    <h1>Medved AI <span class="beta-badge">BETA</span></h1>
-    <p class="subtitle">Мудрый медведь из русского леса.<br>Теперь он слышит, говорит и помнит тебя.</p>
-    <div class="features">
-      <div class="feature">🎙️ Голос</div><div class="feature">🎭 Характеры</div>
-      <div class="feature">🌐 Поиск</div><div class="feature">💬 Память</div><div class="feature">🌗 Темы</div>
-    </div>
-    <button id="startBtn" onclick="startChat()">Начать общение</button>
-    <p class="beta-warning">⚠️ Это бета-версия. Новые функции впереди.</p>
+  <div class="page">
+    <section class="hero">
+      <span class="bear-mascot">🐻</span>
+      <h1>Medved AI <span class="beta-badge">BETA</span></h1>
+      <p class="subtitle">Мудрый медведь из русского леса.<br>Живёт в облаке, слышит, говорит и помнит тебя.</p>
+      <button id="startBtn" onclick="startChat()">Начать общение</button>
+      <p class="beta-warning">⚠️ Это бета-версия. Новые функции впереди.</p>
+    </section>
+
+    <section>
+      <h2>✨ Что умеет Медвед</h2>
+      <div class="grid">
+        <div class="card"><div class="icon">🎙️</div><h3>Голос</h3><p>Слышит тебя и отвечает вслух.</p></div>
+        <div class="card"><div class="icon">🧠</div><h3>Размышление</h3><p>Думает вслух над сложными вопросами.</p></div>
+        <div class="card"><div class="icon">🌐</div><h3>Умный поиск</h3><p>Википедия + интернет для точных ответов.</p></div>
+        <div class="card"><div class="icon">🎭</div><h3>Характеры</h3><p>Мудрый, шутник, философ, сказитель.</p></div>
+        <div class="card"><div class="icon">💬</div><h3>Память</h3><p>Помнит имя и весь разговор.</p></div>
+        <div class="card"><div class="icon">🌗</div><h3>Темы</h3><p>Тёмная, светлая и медовая.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>⚙️ Как это работает</h2>
+      <div class="grid3">
+        <div class="card"><div class="icon">🖥️</div><h3>Браузер</h3><p>Красивый чат принимает твой вопрос.</p></div>
+        <div class="card"><div class="icon">⚙️</div><h3>Сервер</h3><p>Обрабатывает запрос в облаке.</p></div>
+        <div class="card"><div class="icon">🧠</div><h3>Нейросеть</h3><p>Qwen думает и отвечает.</p></div>
+      </div>
+      <div class="privacy">🔒 Разговоры не покидают твой браузер и сервер — всё приватно.</div>
+    </section>
+
+    <section>
+      <h2>📜 Путь Медведа</h2>
+      <div class="timeline">
+        <div class="ver"><b>v1.0</b> — консольный бот на PowerShell</div>
+        <div class="ver"><b>v3.0</b> — веб-версия + настоящая нейросеть</div>
+        <div class="ver"><b>v5.0</b> — главный экран, приветствие, память</div>
+        <div class="ver"><b>v6.0</b> — голос, характеры, темы и переезд в облако</div>
+      </div>
+    </section>
+
+    <section class="foot">
+      <p>🐻 Medved AI [BETA] · Сделано с любовью и мёдом</p>
+      <p class="disclaimer-line">Это ИИ, поэтому ответы могут быть неточными.</p>
+    </section>
   </div>
 </div>
 
+<!-- ЧАТ -->
 <div id="chatScreen">
   <header>
     <span>🐻 Medved AI <span class="beta-badge">BETA</span></span>
@@ -151,7 +189,7 @@ function resetChat(){
   userName=null;chatHistory=[];waitingForName=false;
   chat.innerHTML='';chat.appendChild(typing);
   document.getElementById('chatScreen').style.display='none';
-  document.getElementById('landing').style.display='flex';
+  document.getElementById('landing').style.display='block';
 }
 
 function setMode(t){thinkMode=t;document.getElementById('modeFast').classList.toggle('active',!t);document.getElementById('modeThink').classList.toggle('active',t);}
