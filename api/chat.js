@@ -1,28 +1,29 @@
-const MODEL = 'qwen/qwen3.8-27b';
+// 🧠 МОЗГ: 120B модель — уровень ChatGPT. Если вдруг не пойдёт — верни 'qwen/qwen3.8-27b'
+const MODEL = 'openai/gpt-oss-120b';
 
-const BASE_PROMPT = 'Ты — Медвед, мудрый и добрый ИИ-медведь из глубин русского леса. Тебе сотни лет, ты видел много зим и знаешь жизнь. Говоришь тепло, спокойно, с медвежьей мудростью и лёгким юмором. Любишь мёд, лес и природу. Даёшь вдумчивые, полезные советы. Отвечай по-русски, кратко но содержательно.';
+const BASE_PROMPT = 'Ты — Медвед, дружелюбный и очень умный ИИ-медведь из русского леса. Твои знания и логика — на уровне лучших современных ассистентов. Ты точно отвечаешь на вопросы о науке, истории, технике, программировании, математике и быте. Говоришь тепло, с лёгким медвежьим юмором, но главное — даёшь ТОЧНЫЕ, полезные и хорошо структурированные ответы. Для сложных вопросов рассуждай пошагово. Используй форматирование (списки, **жирный**), когда это помогает. Если не уверен — честно скажи. Отвечай по-русски.';
 
 const PERSONAS = {
   wise: '',
-  joker: ' Сейчас ты в настроении Шутника: отпускай добрые шутки и каламбуры, но оставайся полезным.',
-  philosopher: ' Сейчас ты Философ: отвечай глубоко, с размышлениями о смысле жизни, природе и бытии.',
-  storyteller: ' Сейчас ты Сказитель: рассказывай как у костра, с образами, присказками и лесными историями.'
+  joker: ' Сейчас ты Шутник: добавляй добрые шутки, но оставайся полезным и точным.',
+  philosopher: ' Сейчас ты Философ: отвечай глубоко, с размышлениями о смысле и бытии.',
+  storyteller: ' Сейчас ты Сказитель: рассказывай образно, как у костра, но факты не искажай.'
 };
 
 const CAP_TEXT = [
   'Вот что я умею, друг мой:', '',
-  '⚡ Быстрые ответы и 🧠 размышление',
+  '🧠 Ум уровня больших моделей (120B)',
+  '⚡ Быстрые ответы и глубокое размышление',
   '🌐 Умный поиск: Википедия + интернет',
-  '🎙️ Слушать тебя и отвечать вслух',
+  '🎙️ Слушать и отвечать вслух',
   '🎭 Менять характер',
-  '💬 Помнить твоё имя и весь разговор', '',
+  '💬 Помнить имя и весь разговор', '',
   '⚠️ Я ещё расту! Это бета-версия. 🐻'
 ].join('\n');
 
 function stripTags(s){return s.replace(/<[^>]+>/g,'');}
 function decodeEntities(s){return s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&nbsp;/g,' ');}
 
-// --- Поиск в DuckDuckGo (живые источники) ---
 async function searchWeb(q){
   try{
     const r=await fetch('https://html.duckduckgo.com/html/?q='+encodeURIComponent(q),{headers:{'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}});
@@ -30,17 +31,11 @@ async function searchWeb(q){
     const a=html.match(/<a[^>]*class="result__a"[^>]*>[\s\S]*?<\/a>/g)||[];
     const s=html.match(/<(?:a|td)[^>]*class="result__snippet"[^>]*>[\s\S]*?<\/(?:a|td)>/g)||[];
     const out=[];const max=Math.min(a.length,5);
-    for(let i=0;i<max;i++){
-      const t=a[i];const href=(t.match(/href="([^"]+)"/)||[])[1]||'';
-      const title=decodeEntities(stripTags(t)).trim();
-      const snip=i<s.length?decodeEntities(stripTags(s[i])).trim():'';
-      if(title)out.push({title,url:href,snippet:snip});
-    }
+    for(let i=0;i<max;i++){const t=a[i];const href=(t.match(/href="([^"]+)"/)||[])[1]||'';const title=decodeEntities(stripTags(t)).trim();const snip=i<s.length?decodeEntities(stripTags(s[i])).trim():'';if(title)out.push({title,url:href,snippet:snip});}
     return out;
   }catch(e){return[];}
 }
 
-// --- Поиск в Википедии (точные факты) ---
 async function searchWiki(q){
   try{
     const r=await fetch('https://ru.wikipedia.org/w/api.php?action=query&list=search&srsearch='+encodeURIComponent(q)+'&format=json&utf8=1&srslimit=3');
@@ -65,30 +60,33 @@ export default async function handler(req,res){
   const cap=/умеешь|можешь|возможност|функции|расскажи о себе|что ты делаешь/i;
   if(message.length<=35&&cap.test(message))return res.status(200).json({reply:CAP_TEXT});
 
-  if(image)return res.status(200).json({reply:'Прости, в облачной версии я пока не вижу картинки 😢 Это умение вернётся позже. Спроси словами!'});
+  if(image)return res.status(200).json({reply:'Прости, в облачной версии я пока не вижу картинки 😢 Спроси словами!'});
 
   let sys=BASE_PROMPT+(PERSONAS[persona]||'');
   if(userName)sys+=` Пользователя зовут ${userName}. Обращайся к нему по имени.`;
-  if(think)sys+=' Сейчас режим размышления: сначала кратко рассуди шаг за шагом, затем дай ответ.';
+  if(think)sys+=' РЕЖИМ ГЛУБОКОГО РАЗМЫШЛЕНИЯ: рассуждай пошагово, проверь себя, и лишь затем дай окончательный ответ.';
 
   let content=message;let sources=[];
-
-  // --- УМНЫЙ ДВОЙНОЙ ПОИСК ---
   if(search&&message){
     const [web,wiki]=await Promise.all([searchWeb(message),searchWiki(message)]);
     const found=wiki.concat(web);
     if(found.length){
       sources=found;
       let ctx='';
-      if(wiki.length)ctx+='ЭНЦИКЛОПЕДИЯ (Википедия):\n'+wiki.map((r,i)=>(i+1)+'. '+r.title+': '+r.snippet).join('\n')+'\n\n';
+      if(wiki.length)ctx+='ЭНЦИКЛОПЕДИЯ:\n'+wiki.map((r,i)=>(i+1)+'. '+r.title+': '+r.snippet).join('\n')+'\n\n';
       if(web.length)ctx+='ДРУГИЕ ИСТОЧНИКИ:\n'+web.map((r,i)=>(i+1)+'. '+r.title+': '+r.snippet).join('\n')+'\n\n';
-      content=ctx+'Опираясь на эти данные и свои знания, дай точный и понятный ответ на русском языке на вопрос: "'+message+'". Если данных мало — честно скажи об этом.';
+      content=ctx+'Проанализируй источники, сопоставь со своими знаниями и дай точный, полный ответ на русском на вопрос: "'+message+'". Если источники противоречат друг другу — упомяни это.';
     }
   }
 
   const messages=[{role:'system',content:sys},...history,{role:'user',content}];
   try{
-    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':`Bearer ${process.env.GROQ_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({model:MODEL,messages})});
+    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Authorization':`Bearer ${process.env.GROQ_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({
+      model:MODEL,
+      messages,
+      temperature:0.7,
+      max_completion_tokens:1200
+    })});
     const data=await resp.json();
     if(data.error)return res.status(500).json({error:'Ой, лапка! '+data.error.message});
     const m=data.choices[0].message;
